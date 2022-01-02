@@ -1,0 +1,74 @@
+---
+title: "Model"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(car)
+library(zoo)
+library(lmtest)
+library(MASS)
+library(crayon)
+library(lmerTest)
+library(sjstats)
+library(MuMIn)
+opts_chunk$set(message = FALSE, warning = FALSE, tidy = TRUE)
+```
+
+```{r include=FALSE}
+regression.diagnostics <- function(fit) {
+  par(mfrow = c(2, 3))
+  plot(fit, which = 1:5)
+  influencePlot(fit)
+  
+  cat("异常值/强影响点检验\n")
+  print(outlierTest(fit))
+  
+  cat("\n异方差检验\n")
+  print(ncvTest(fit))
+  print(bptest(fit))
+  print(gqtest(fit))
+  
+  cat("\n共线性检验\n")
+  print(vif(fit))
+  
+  cat("\n自相关检验\n")
+  print(durbinWatsonTest(fit))
+}
+```
+
+## Model 1: Linear Model
+
+```{r}
+df = read.csv("../Data/Preprocessed/model.csv")
+fit <- lm(formula = InfectionGrowth ~ Restrictions.on.gatherings_Level_2 + Facial.Coverings_Level_2 + Vaccination.policy_Level_2, data = df)
+summary(fit)
+```
+
+## Model 2: Multilevel Model
+
+```{r}
+df = read.csv("../Data/Preprocessed/model_with_states.csv")
+fit <- lmer(formula = InfectionGrowth ~ Restrictions.on.gatherings_Level_2 + Facial.Coverings_Level_2 + Vaccination.policy_Level_2 + (1 | RegionName), data = df)
+summary(fit)
+coef(fit)
+r2(fit)
+plot(fit)
+```
+
+## Model 3: Poisson Model
+
+```{r}
+df = read.csv("../Data/Preprocessed/model_poisson.csv")
+fit <- glm(formula = DailyCasesMA ~ Restrictions.on.gatherings_Level_2 + Facial.Coverings_Level_2 + Vaccination.policy_Level_2 + DailyCasesMAbefore, family = "poisson", data = df)
+summary(fit)
+r.squaredGLMM(fit)
+```
